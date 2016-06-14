@@ -1,5 +1,9 @@
 # ES7 Proposal: Function.prototype.papp
 
+This proposal introduces `papp` – a concise way of using partial application for functions that require no immediate `this` parameter. It is backwards-compatible, and is immediately useful with most any JavaScript function today.
+
+## Introduction
+
 Partial application is possible in JavaScript via `Function.prototype.bind`:
 
 ```js
@@ -9,12 +13,35 @@ var addTen = add.bind(null, 10);
 addTen(20) //=> 30
 ```
 
-However, `bind` is a hinderance in two cases:
+However, `bind` is undesirable for three reasons:
 
 1. Sometimes you don't care about the value of `this`, yet you still must provide `bind`'s first argument
 2. Sometimes you **do** care about the value of `this`, but don't want to commit to a specific value yet.
+3. [Using `bind` is significantly slower than using a plain closure](http://stackoverflow.com/questions/17638305/why-is-bind-slower-than-a-closure) (!)
 
-`Function.prototype.papp` solves both these issues in a simple, elegant manner.
+`Function.prototype.papp` solves both these issues in a simple, elegant, and noise-free manner. Here is an illustrative example:
+
+```js
+function add (x, y, z) { return x + y + z; }
+
+var addTen = add.papp(3, 7);
+addTen(5) //=> 15
+
+// AS OPPOSED TO:
+// var addTen = add.bind(null, 3, 7)
+// OR:
+// var addTen = (x) => add(3, 7, x)
+
+var addThenIncrement = add.papp(1);
+addThenIncrement(10, 6) //=> 17
+
+// AS OPPOSED TO:
+// var addTen = add.bind(null, 1)
+// OR:
+// var addTen = (a, b) => add(1, a, b)
+```
+
+Accepting `papp` into the ES standard will allow JS runtimes to implement a more performant version of `bind` that is dedicated to partial application.
 
 ### Ignoring `this`
 
@@ -37,97 +64,109 @@ function greet (target) {
 }
 
 var greetNewcomer = greet.papp('the newcomer');
-greetNewcomer.call({ name: 'Alice' }); //=> 'Alice greets the newcomer'
+greetNewcomer.call({ name: 'Alice' }) //=> 'Alice greets the newcomer'
 ```
 
-## Motivating Examples
 
-Any programmer in the functional programming world will tell you that partial application is immensely useful. Here are some examples:
+## Practical Examples
 
-### HTTP Library
+These examples are pulled from real-world use cases of partial application.
+
+### HTTP API Output Whitelisting
 
 ```js
-// lib/http.js
-exports.get = request.papp('GET');
-exports.post = request.papp('POST');
-exports.put = request.papp('PUT');
-exports.del = request.papp('DELETE');
+Player.whitelist = {
+  basic: pluck.papp(['name', 'score']),
+  admin: pluck.papp(['name', 'score', 'email']),
+};
 
-function request(method, url, options) {
-  return requestLibrary({
-    method: method,
-    url: url,
-    data: options && options.data
-  });
+function pluck (attrs, obj) {
+  var result = {};
+  attrs.forEach( name => result[name] = obj[name] );
+  return result;
 }
 
-// Elsewhere...
-import { get, post } from './lib/http.js';
+// Example use (in practice, alice would come from a database):
+var alice = { name: 'Alice', score: 100, email: 'alice@example.com', password_hash: '...' };
 
-get('/blog-posts').then(...);
-post('/blog-posts', { data: ... }).then(...);
+Player.whitelist.basic(alice) //=> { name: 'Alice', score: 100 }
+
+Player.whitelist.admin(alice) //=> { name: 'Alice', score: 100, email: 'alice@example.com' }
 ```
 
-
-### DOM Callbacks
+### Constructing User-friendly APIs
 
 ```js
-document.querySelector('.tab-1').onclick = setTab.papp('tab1');
-document.querySelector('.tab-2').onclick = setTab.papp('tab2');
-document.querySelector('.tab-3').onclick = setTab.papp('tab3');
-
-var state = 'tab1';
-function setTab (tabName) {
-  state = tabName;
+function createClient (host) {
+  return {
+    get:  makeRequest.papp(host, 'GET'),
+    post: makeRequest.papp(host, 'POST'),
+    put:  makeRequest.papp(host, 'PUT'),
+    del:  makeRequest.papp(host, 'DELETE'),
+  };
 }
+
+var client = createClient('https://api.example.com');
+client.get('/users');
+client.post('/comments', { content: "papp is great!" });
+
+function makeRequest (host, method, url, data, options) {
+  // ... Make request, return a promise ...
+}
+
+// AS OPPOSED TO:
+// function createClient (host) {
+//   return {
+//     get:  (url, data, options) => makeRequest(host, 'GET', url, data, options),
+//     post: (url, data, options) => makeRequest(host, 'POST', url, data, options),
+//     put:  (url, data, options) => makeRequest(host, 'PUT', url, data, options),
+//     del:  (url, data, options) => makeRequest(host, 'DELETE', url, data, options),
+//   }
+// }
 ```
 
+## Other Examples
 
-### Database Model
+These examples illustrate concepts you can use in your own applications.
+
+### Mapping with Arrays
 
 ```js
-exports.create = save.papp('create');
-exports.update = save.papp('update');
+var chapters = ["The Beginning", "Climax", "Resolution"];
 
-function save (type, attrs) {
-  if (type === 'create') {
-    beforeCreate(attrs);
-  }
+var numberedChapters = chapters.map( toListItem.papp('My Book') )
+//=> ["My Book / 1. The Beginning", "My Book / 2. Climax", "My Book / 3. Resolution"]
 
-  validate(attrs);
+// AS OPPOSED TO:
+// var numberedChapters = chapters.map( (chapter, i) => toListItem('My Book', chapter, i) )
 
-  if (type === 'create') {
-    attrs.created_at = Date.now();
-    db.insert(attrs);
-  }
-  else if (type === 'update') {
-    attrs.updated_at = Date.now();
-    db.update(attrs.id, attrs);
-  }
+function toListItem (prefix, item, i) {
+  return `${prefix} / ${i + 1}. ${item}`
 }
 ```
 
-## ES6 Polyfill
+## Polyfill
+
+ES6:
 
 ```js
 Function.prototype.papp = function (...args) {
   var fn = this;
-  return function () {
-    return fn.call(this, ...args, ...arguments);
-  }
-}
+  return function (...moreArgs) {
+    fn.call(this, ...args, ...moreArgs);
+  };
+};
 ```
 
-## ES5 Polyfill
+ES5:
 
 ```js
 Function.prototype.papp = function () {
   var slice = Array.prototype.slice;
-  var args = slice.call(arguments);
   var fn = this;
+  var args = slice.call(arguments);
   return function () {
-    var moreArgs = slice.call(arguments);
-    return fn.apply(this, args.concat(moreArgs));
-  }
-}
+    return fn.apply(this, args.concat(slice.call(arguments)));
+  };
+};
 ```
