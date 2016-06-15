@@ -36,9 +36,9 @@ var addThenIncrement = add.papp(1);
 addThenIncrement(10, 6) //=> 17
 
 // AS OPPOSED TO:
-// var addTen = add.bind(null, 1)
+// var addThenIncrement = add.bind(null, 1)
 // OR:
-// var addTen = (a, b) => add(1, a, b)
+// var addThenIncrement = (a, b) => add(1, a, b)
 ```
 
 Accepting `papp` into the ES standard will allow JS runtimes to implement a more performant version of `bind` that is dedicated to partial application.
