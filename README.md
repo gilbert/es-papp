@@ -1,4 +1,4 @@
-# ES7 Proposal: Function.prototype.papp
+# ECMAScript Proposal: Function.prototype.papp
 
 This proposal introduces `papp` – a concise way of using partial application for functions that require no immediate `this` parameter. It is backwards-compatible, and is immediately useful with most any JavaScript function today.
 
@@ -17,7 +17,7 @@ However, `bind` is undesirable for three reasons:
 
 1. Sometimes you don't care about the value of `this`, yet you still must provide `bind`'s first argument
 2. Sometimes you **do** care about the value of `this`, but don't want to commit to a specific value yet.
-3. [Using `bind` is significantly slower than using a plain closure](http://stackoverflow.com/questions/17638305/why-is-bind-slower-than-a-closure) (!)
+3. ~~[Using `bind` is significantly slower than using a plain closure](http://stackoverflow.com/questions/17638305/why-is-bind-slower-than-a-closure) (!)~~ (this [has been fixed](http://v8project.blogspot.co.uk/2016/06/release-52.html) in V8, and wasn't an issue in other engines for quite a while)
 
 `Function.prototype.papp` solves both these issues in a simple, elegant, and noise-free manner. Here is an illustrative example:
 
