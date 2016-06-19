@@ -1,0 +1,19 @@
+{
+  "name": "papp-polyfill",
+  "version": "1.0.0",
+  "description": "A polyfill for Function.prototype.papp",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mindeavor/es-papp.git"
+  },
+  "author": "Gilbert <gilbertbagrza@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/mindeavor/es-papp/issues"
+  },
+  "homepage": "https://github.com/mindeavor/es-papp#readme"
+}

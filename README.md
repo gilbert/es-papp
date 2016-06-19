@@ -1,6 +1,14 @@
 # ECMAScript Proposal: Function.prototype.papp
 
-This proposal introduces `papp` – a concise way of using partial application for functions that require no immediate `this` parameter. It is backwards-compatible, and is immediately useful with most any JavaScript function today.
+This proposal introduces `papp` and `rPapp` – concise ways of using partial application for functions that require no immediate `this` parameter. It is backwards-compatible, and is immediately useful with most any JavaScript function today.
+
+## Try it out!
+
+    npm install --save papp-polyfill
+
+Then require it once (in your code, as early as possible):
+
+    require('papp-polyfill')
 
 ## Introduction
 
