@@ -161,7 +161,7 @@ ES6:
 Function.prototype.papp = function (...args) {
   var fn = this;
   return function (...moreArgs) {
-    fn.apply(this, args.concat(moreArgs));
+    fn.apply(this, [...args, ...moreArgs]);
   };
 };
 ```
